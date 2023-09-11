@@ -1,0 +1,23 @@
+{
+  "name": "chat_server",
+  "version": "1.0.0",
+  "description": "聊天项目后台服务",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "serve": "nodemon app.ts"
+  },
+  "keywords": [
+    "chat",
+    "server"
+  ],
+  "author": "zcf",
+  "license": "MIT",
+  "dependencies": {
+    "@types/node": "^20.5.9",
+    "express": "^4.18.2",
+    "ioredis": "^5.3.2",
+    "mysql": "^2.18.1",
+    "socket.io": "^4.7.2"
+  }
+}
