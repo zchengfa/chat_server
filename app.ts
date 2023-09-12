@@ -17,7 +17,7 @@ app.use('/test',(req:any,res:any)=>{
     res.send('666')
 })
 
-server.listen(6666,()=>{
+server.listen(3000,()=>{
     console.log('服务器运行中')
 })
 
