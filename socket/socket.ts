@@ -7,13 +7,17 @@ module.exports = (server:any,pool:any) => {
     })
 
 
-    let users = {}
+    let users = []
     io.on('connection', (socket:any) => {
 
-        socket.on('online',(user:any) => {
-            // users[user] = socket.id
-            // socket.name = user
-            console.log(user + '上线了',socket.id,13)
+        socket.on('online',(user:string) => {
+            //users[user] = socket.id
+            users.push({
+                userSocketId:socket.id,
+                user
+            })
+            socket.name = user
+            console.log(user)
         })
 
         socket.on('sendMsg',() => {
