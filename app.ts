@@ -21,16 +21,13 @@ app.use(cors())
 
 const pool = require('./mysql/pool')()
 
-app.use('/test',(req:any,res:any)=>{
-
-    res.send('666')
-})
-
 
 server.listen(3000,()=>{
     console.log('服务器运行中')
 })
 
 require('./socket/socket')(server,pool)
+
+require('./router/verifyToken')(app)
 
 require('./router/loginRegister')(app,router,result)
