@@ -4,7 +4,7 @@ const bodyParser = require('body-parser')
 const cors = require('cors')
 const { redis } = require('./redis/redis')
 
-const result = redis({password:19961212})
+const result = redis()
 
 result ? console.log('连接redis成功') : console.log('连接redis失败')
 

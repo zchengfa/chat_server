@@ -14,3 +14,14 @@ export const redis = (config?:redisConfig)=>{
         db:config?.db
     })
 }
+
+//给ioredis添加方法
+ioredis.prototype.hashSetObject = (key:any,obj:any)=>{
+    let arg = []
+    for (const keyKey in obj) {
+        arg.push(keyKey,obj[keyKey])
+    }
+
+    return redis().hmset(key,...arg)
+}
+
