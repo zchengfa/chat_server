@@ -2,11 +2,9 @@ const http = require('http')
 const express = require('express')
 const bodyParser = require('body-parser')
 const cors = require('cors')
-const { redis } = require('./redis/redis')
+const { Redis } = require('./redis/redis')
 
-const result = redis()
-
-result ? console.log('连接redis成功') : console.log('连接redis失败')
+const redis = Redis()
 
 const app = express()
 const router = express.Router()
@@ -19,15 +17,25 @@ app.use(bodyParser.urlencoded({extended:false}))
 //允许跨域
 app.use(cors())
 
-const pool = require('./mysql/pool')()
+const { mysql_query,connect } = require('./mysql/pool')
+const pool = connect()
+pool.self_query = mysql_query
 
 
 server.listen(3000,()=>{
     console.log('服务器运行中')
 })
 
+redis.on('connect',()=>{
+    console.log('redis连接中')
+})
+
+redis.on('error',(err:any)=>{
+    console.log('redis出现错误',err)
+})
+
 require('./socket/socket')(server,pool)
 
 require('./router/verifyToken')(app)
 
-require('./router/loginRegister')(app,router,result)
+require('./router/loginRegister')(app,router,redis,pool)

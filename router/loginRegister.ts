@@ -1,5 +1,5 @@
 
-module.exports = (app:any,router:any,redis:any)=>{
+module.exports = (app:any,router:any,redis:any,pool:any)=>{
   const { generateID,encodeImgBase64,createToken } = require('../util/util')
 
   router.post('/loginRegister',(req:any,res:any)=>{
@@ -61,6 +61,8 @@ module.exports = (app:any,router:any,redis:any)=>{
           })
         }
         else{
+
+
           redis.hashSetObject(listName,{
             user_id:ID,
             username:paramsObj.data.username,
