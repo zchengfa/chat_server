@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken')
+
 let secretOrPrivateKey = 'mallSecretOrPrivateKey'
 function createToken (params:any,expiresTime:any) {
 

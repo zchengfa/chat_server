@@ -12,7 +12,7 @@ module.exports = (app:any,router:any,pool:any)=>{
          * 优先查询该用户下是否跟搜索的用户是好友，若是，响应好友信息，若不是则响应搜索者信息
          */
         pool.query(selectUser,(err:any,result:any)=>{
-            if(err) throw err
+            if(err) console.log('数据库出现错误，请检查是否开启数据库')
             if(result.length){
                 const userInfo = result[0]
                 delete userInfo.register_time

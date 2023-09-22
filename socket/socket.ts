@@ -64,7 +64,6 @@ module.exports = (server:any,pool:any) => {
                 delete users[socket.name]
 
             }
-
         })
     })
 }
