@@ -10,14 +10,14 @@ function verifyToken (token:any,callback:Function){
   jwt.verify(token,secretOrPrivateKey,callback)
 }
 
-function generateID (digit:number = 5,radix:number = 10){
+function generateID (digit:number = 5,timeStamp:boolean = true,radix:number = 10){
   let id = ''
   let timestamp = new Date().getTime()
 
   for (let i=0;i<digit;i++){
     id+=Math.floor(Math.random()*9).toString(radix)
   }
-  return timestamp + id
+  return timeStamp ? timestamp + id : id
 }
 
 function encodeImgBase64(imagePath:string){

@@ -155,7 +155,7 @@ export function connect(){
         host: 'localhost',
         user: 'root',
         password: '19961212',
-        database: 'mall',
+        database: 'chat',
         multipleStatements: true
     })
 }

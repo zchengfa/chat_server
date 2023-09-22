@@ -21,9 +21,10 @@ module.exports = (server:any,pool:any) => {
 
         socket.on('sendMsg',(data:any) => {
             //后续操作：先查看接收者是否在线，若不在线可以将消息保存至数据库，等他上线时再给他发送消息
+            const receiver = data.receiver
             console.log(data)
-            if (users[data.receiver]){
-                socket.to(users[data.receiver]).emit('receiveMessage',{
+            if (users[receiver]){
+                socket.to(users[receiver]).emit('receiveMessage',{
                     sender:data.sender,
                     msg:data.msg,
                     sendTime:data.sendTime
@@ -43,6 +44,20 @@ module.exports = (server:any,pool:any) => {
                 // })
             }
 
+        })
+        //接收前端发出的好友申请
+        socket.on('sendFriendRequest',(data:any)=>{
+            socket.emit('sendRequestSuccess')
+            const receiver = data.reciever.RUA
+            if(users[receiver]){
+                socket.to(users[receiver]).emit('receiveFriendRequest',{
+
+                })
+            }
+            else{
+                //用户不在线
+            }
+            console.log(data,'用户发送了好友申请')
         })
         socket.on('disconnecting',() => {
             if (users.hasOwnProperty(socket.name)) {

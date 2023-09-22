@@ -26,6 +26,7 @@ server.listen(3000,()=>{
     console.log('服务器运行中')
 })
 
+
 redis.on('connect',()=>{
     console.log('redis连接中')
 })
@@ -38,4 +39,7 @@ require('./socket/socket')(server,pool)
 
 require('./router/verifyToken')(app)
 
+require('./router/index')(app,router,pool)
+
 require('./router/loginRegister')(app,router,redis,pool)
+
