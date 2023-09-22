@@ -22,7 +22,7 @@ const pool = connect()
 pool.self_query = mysql_query
 
 
-server.listen(3000,()=>{
+server.listen(4000,()=>{
     console.log('服务器运行中')
 })
 
