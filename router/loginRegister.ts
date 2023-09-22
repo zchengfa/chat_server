@@ -75,7 +75,7 @@ module.exports = (app:any,router:any,redis:any,pool:any)=>{
         else{
           let register_time = timeFormatting('YYYY-MM-DD hh:mm:ss',new Date())
           redis.hashSetObject(listName,{
-            user_id:ID,
+            user_id:Number(ID),
             account,
             username:username,
             password:password,
