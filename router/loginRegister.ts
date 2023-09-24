@@ -29,8 +29,10 @@ module.exports = (app:any,router:any,redis:any,pool:any)=>{
                 },'1d')
                 const lastLoginTime = timeFormatting('YYYY-MM-DD hh:mm:ss',new Date())
                 const updateUser = pool.self_query.update('users',`last_login_time = '${lastLoginTime}'`,`user_id = ${info.user_id}`)
-                pool.query(updateUser,()=>{
-                  console.log('用户登录时间已更新')
+                pool.query(updateUser,(err:any,up:any)=>{
+                  if(err) console.log(err)
+
+                  console.log('用户登录时间已更新',info.user_id)
                 })
 
                 delete info.password
@@ -65,7 +67,6 @@ module.exports = (app:any,router:any,redis:any,pool:any)=>{
        *    1.2不存在，进行注册并给出响应
        */
       let ID = generateID(),avatar = encodeImgBase64('static/avatar.jpg'),account = generateID(10,false)
-
       redis.hlen(listName).then((len:number)=>{
         if (!!len){
           res.send({
@@ -75,7 +76,7 @@ module.exports = (app:any,router:any,redis:any,pool:any)=>{
         else{
           let register_time = timeFormatting('YYYY-MM-DD hh:mm:ss',new Date())
           redis.hashSetObject(listName,{
-            user_id:Number(ID),
+            user_id:ID,
             account,
             username:username,
             password:password,

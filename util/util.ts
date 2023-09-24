@@ -18,6 +18,10 @@ function generateID (digit:number = 5,timeStamp:boolean = true,radix:number = 10
   for (let i=0;i<digit;i++){
     id+=Math.floor(Math.random()*9).toString(radix)
   }
+
+  if( Number(id.substring(0,1)) === 0){
+    generateID()
+  }
   return timeStamp ? timestamp + id : id
 }
 

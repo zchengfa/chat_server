@@ -46,13 +46,17 @@ module.exports = (server:any,pool:any) => {
 
         })
         //接收前端发出的好友申请
+        // {
+        //     senderMsg:data.formData.sender,
+        //     senderUsername:data.sender.SUA,
+        //     sender_id:data.sender.SUN,
+        //     senderAccount:data.sender.SA
+        // }
         socket.on('sendFriendRequest',(data:any)=>{
             socket.emit('sendRequestSuccess')
             const receiver = data.reciever.RUA
             if(users[receiver]){
-                socket.to(users[receiver]).emit('receiveFriendRequest',{
-
-                })
+                socket.to(users[receiver]).emit('receiveFriendRequest',data)
             }
             else{
                 //用户不在线
