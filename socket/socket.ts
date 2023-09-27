@@ -58,6 +58,7 @@ module.exports = (server:any,pool:any) => {
             socket.emit('sendRequestSuccess')
             const receiver = data.receiver.RUA
             if(users[receiver]){
+                //console.log(data)
                 socket.to(users[receiver]).emit('receiveFriendRequest',data)
             }
             else{
@@ -74,18 +75,17 @@ module.exports = (server:any,pool:any) => {
             const senderLook = data.sender.formData.look
             const senderTags = data.sender.formData.tags
 
-            const rNotes = data.sender.formData.notes
-            const rChatOnly = data.sender.formData.friendCircleSport
-            const rAllow = data.sender.formData.allow
-            const rLook = data.sender.formData.look
-            const rTags = data.sender.formData.tags
-
+            const rNotes = data.receiver.formData.notes
+            const rChatOnly = data.receiver.formData.friendCircleSport
+            const rAllow = data.receiver.formData.allow
+            const rLook = data.receiver.formData.look
+            const rTags = data.receiver.formData.tags
 
             //同意添加好友，为双方建立好友关系
             let selfPromise = ()=>{
                 const insertFriendForSelf = pool.self_query.insert('users_association','user_id,friend_id,notes,source,tags,chatOnly,look,allow',
-                    `${data.sender.info.RUN},${data.receiver.info.user_id},${senderNotes ? senderNotes:null},'${'对方'+data.source}',
-                 ${senderTags ? senderTags : null},${!senderChatOnly},${senderLook},${senderAllow}
+                    `${data.sender.info.RUN},${data.receiver.info.user_id},'${senderNotes ? senderNotes:null}','${'对方'+data.source}',
+                 '${senderTags ? senderTags : null}',${!senderChatOnly},${!senderLook},${!senderAllow}
                 `
                 )
                 return new Promise((resolve, reject)=>{
@@ -101,14 +101,36 @@ module.exports = (server:any,pool:any) => {
             }
 
             let selfInfoPromise = ()=>{
-                const selectSelfInfo = pool.self_query.selectWithInnerJoin('users','users_association','*','SO','ST',`user_id === ${data.sender.info.RUN}`)
+                const selectSelfInfo = pool.self_query.selectWithInnerJoin('users','users_association','*','u','us',`u.user_id = us.friend_id and us.user_id = ${data.sender.info.RUN}`)
                 return new Promise((resolve, reject)=>{
                     pool.query(selectSelfInfo,(err:any,res:any)=>{
                         if(err){
                             reject(err)
                         }
                         if(res){
-                            resolve(res)
+                            delete res[0].password
+                            delete res[0].last_login_time
+                            delete res[0].register_time
+                            delete res[0].friend_id
+                            resolve(res[0])
+                        }
+                    })
+                })
+            }
+
+            let receiverInfoPromise = ()=>{
+                const selectSelfInfo = pool.self_query.selectWithInnerJoin('users','users_association','*','u','us',`u.user_id = us.friend_id and us.user_id = ${data.receiver.info.user_id}`)
+                return new Promise((resolve, reject)=>{
+                    pool.query(selectSelfInfo,(err:any,res:any)=>{
+                        if(err){
+                            reject(err)
+                        }
+                        if(res){
+                            delete res[0].password
+                            delete res[0].last_login_time
+                            delete res[0].register_time
+                            delete res[0].friend_id
+                            resolve(res[0])
                         }
                     })
                 })
@@ -118,8 +140,8 @@ module.exports = (server:any,pool:any) => {
 
             let receiverPromise = ()=>{
                 const insertFriendForReceiver = pool.self_query.insert('users_association','user_id,friend_id,notes,source,tags,chatOnly,look,allow',
-                    `${data.receiver.info.user_id},${data.sender.info.RUN},${rNotes ? rNotes:null},'${data.source}',
-                 ${rTags ? rTags : null},${!rChatOnly},${rLook},${rAllow}
+                    `${data.receiver.info.user_id},${data.sender.info.RUN},'${rNotes ? rNotes:null}','${data.source}',
+                 '${rTags ? rTags : null}',${!rChatOnly},${!rLook},${!rAllow}
                 `
                 )
 
@@ -140,8 +162,16 @@ module.exports = (server:any,pool:any) => {
             let promiseAll = Promise.all([selfPromise(),receiverPromise()])
 
             promiseAll.then(()=>{
-                socket.emit('hadAcceptApply')
-                socket.to(users[receiver]).emit('friendHadAcceptApply')
+                selfInfoPromise().then((selfInfo:any)=>{
+
+                    socket.emit('hadAcceptApply',selfInfo)
+                })
+
+                receiverInfoPromise().then((receiverInfo:any)=>{
+                    socket.to(users[receiver]).emit('friendHadAcceptApply',receiverInfo)
+                })
+
+
             }).catch((err:any)=>{
                 console.log(err)
             })

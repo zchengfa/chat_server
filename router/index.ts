@@ -14,6 +14,7 @@ module.exports = (app:any,router:any,pool:any)=>{
         pool.query(selectUser,(err:any,result:any)=>{
             if(err) console.log('数据库出现错误，请检查是否开启数据库')
             if(result.length){
+
                 const userInfo = result[0]
                 delete userInfo.register_time
                 delete userInfo.last_login_time

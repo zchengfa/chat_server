@@ -66,7 +66,7 @@ module.exports = (app:any,router:any,redis:any,pool:any)=>{
        *    1.1存在，给出存在响应
        *    1.2不存在，进行注册并给出响应
        */
-      let ID = generateID(),avatar = encodeImgBase64('static/avatar.jpg'),account = generateID(10,false)
+      let ID = generateID(),avatar = encodeImgBase64('static/avatar.jpg'),account = generateID(8,false)
       redis.hlen(listName).then((len:number)=>{
         if (!!len){
           res.send({

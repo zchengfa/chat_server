@@ -13,7 +13,7 @@ function verifyToken (token:any,callback:Function){
 
 function generateID (digit:number = 5,timeStamp:boolean = true,radix:number = 10){
   let id = ''
-  let timestamp = new Date().getTime()
+  let timestamp = new Date().getTime().toString().substring(0,5)
 
   for (let i=0;i<digit;i++){
     id+=Math.floor(Math.random()*9).toString(radix)
