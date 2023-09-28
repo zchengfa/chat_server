@@ -12,13 +12,71 @@ module.exports = (server:any,pool:any) => {
     let users:any = {}
     io.on('connection', (socket:any) => {
 
-        socket.on('online',(user:string) => {
-            users[user] = socket.id
-            socket.name = user
+        socket.on('online',(user:any) => {
+            const {name,user_id} = user
+            users[name] = socket.id
+            socket.name = name
 
-            //后期操作：上线时查看当前上线者是否有再离线期间有其他用户给他发过消息，若有给上线这发送过去
-            socket.emit('reciever','hello')
-            console.log(user,users)
+            /**
+             * 后期操作：
+             * 1.上线时查看当前上线者是否有在离线期间有其他用户给他发过消息，若有给上线者发送过去
+             * 2.上线时给上线者发送好友信息
+             */
+            let userData:any = {}
+
+            /**
+             * 获取好友列表
+             */
+            let friendListPromise = ()=>{
+                const selectFriendList = pool.self_query.selectFields('users_association','friend_id',`user_id = ${user_id}`)
+                return new Promise((resolve, reject)=>{
+                    pool.query(selectFriendList,(err:any,result:any)=>{
+                        if(err){
+                            reject(err)
+                        }
+                        if(result){
+                            resolve(result)
+                        }
+                    })
+                })
+            }
+
+            friendListPromise().then((res:any)=>{
+                let data:any[] = []
+                return new Promise((resolve, reject)=>{
+                    if(res.length){
+                        res.map((item:any,index:number)=>{
+
+                            const friendInfo = pool.self_query.selectWithInnerJoin('users','users_association','*','u','us',`u.user_id = us.friend_id and us.user_id = ${user_id}`)
+                            pool.query(friendInfo,(err:any,result:any)=>{
+                                if(err){
+                                    reject(err)
+                                }
+                                if(result){
+                                    result[index].user_id = result[index].friend_id
+                                    data.push(deleteValue(result[index]))
+
+                                    if(data.length === res.length){
+                                        resolve(data)
+                                    }
+                                }
+                            })
+                        })
+                    }
+                    else{
+                        resolve([])
+                    }
+                })
+            }).then((res:any)=>{
+                userData['friendList'] = res
+                socket.emit('reciever',userData)
+            })
+
+            /**
+             * 获取未收到的消息(待完善)
+             */
+
+            console.log(users)
         })
 
         socket.on('sendMsg',(data:any) => {
@@ -68,6 +126,7 @@ module.exports = (server:any,pool:any) => {
         })
         socket.on('acceptApply',(data:any)=>{
 
+
             const receiver = data.receiver.info.username
             const senderNotes = data.sender.formData.notes
             const senderChatOnly = data.sender.formData.friendCircleSport
@@ -102,41 +161,13 @@ module.exports = (server:any,pool:any) => {
 
             let selfInfoPromise = ()=>{
                 const selectSelfInfo = pool.self_query.selectWithInnerJoin('users','users_association','*','u','us',`u.user_id = us.friend_id and us.user_id = ${data.sender.info.RUN}`)
-                return new Promise((resolve, reject)=>{
-                    pool.query(selectSelfInfo,(err:any,res:any)=>{
-                        if(err){
-                            reject(err)
-                        }
-                        if(res){
-                            delete res[0].password
-                            delete res[0].last_login_time
-                            delete res[0].register_time
-                            delete res[0].friend_id
-                            resolve(res[0])
-                        }
-                    })
-                })
+                return promiseQuery(pool,selectSelfInfo,data.receiver.info.user_id)
             }
 
             let receiverInfoPromise = ()=>{
-                const selectSelfInfo = pool.self_query.selectWithInnerJoin('users','users_association','*','u','us',`u.user_id = us.friend_id and us.user_id = ${data.receiver.info.user_id}`)
-                return new Promise((resolve, reject)=>{
-                    pool.query(selectSelfInfo,(err:any,res:any)=>{
-                        if(err){
-                            reject(err)
-                        }
-                        if(res){
-                            delete res[0].password
-                            delete res[0].last_login_time
-                            delete res[0].register_time
-                            delete res[0].friend_id
-                            resolve(res[0])
-                        }
-                    })
-                })
+                const selectReceiverInfo = pool.self_query.selectWithInnerJoin('users','users_association','*','u','us',`u.user_id = us.friend_id and us.user_id = ${data.receiver.info.user_id}`)
+                return promiseQuery(pool,selectReceiverInfo,data.sender.info.RUN)
             }
-
-
 
             let receiverPromise = ()=>{
                 const insertFriendForReceiver = pool.self_query.insert('users_association','user_id,friend_id,notes,source,tags,chatOnly,look,allow',
@@ -165,10 +196,13 @@ module.exports = (server:any,pool:any) => {
                 selfInfoPromise().then((selfInfo:any)=>{
 
                     socket.emit('hadAcceptApply',selfInfo)
+
                 })
 
                 receiverInfoPromise().then((receiverInfo:any)=>{
+
                     socket.to(users[receiver]).emit('friendHadAcceptApply',receiverInfo)
+
                 })
 
 
@@ -184,4 +218,34 @@ module.exports = (server:any,pool:any) => {
             }
         })
     })
+}
+
+function promiseQuery(pool:any,statement:string,id:number | string){
+    return new Promise((resolve, reject)=>{
+        pool.query(statement,(err:any,res:any)=>{
+            if(err){
+                reject(err)
+            }
+            if(res){
+                let data = {}
+                res.map((item:any)=>{
+
+                    if(Number(id) === item.friend_id){
+                        item.user_id = item.friend_id
+                        data = deleteValue(item)
+                    }
+
+                })
+                resolve(data)
+            }
+        })
+    })
+}
+
+function deleteValue(obj:any,propertyArr:string[] = ['password','last_login_time','register_time','friend_id']){
+    propertyArr.map((item:string)=>{
+        delete obj[item]
+    })
+
+    return obj
 }
