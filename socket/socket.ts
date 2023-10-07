@@ -82,13 +82,10 @@ module.exports = (server:any,pool:any) => {
         socket.on('sendMsg',(data:any) => {
             //后续操作：先查看接收者是否在线，若不在线可以将消息保存至数据库，等他上线时再给他发送消息
             const receiver = data.receiver
-            console.log(data)
+            console.log(users,data)
             if (users[receiver]){
-                socket.to(users[receiver]).emit('receiveMessage',{
-                    sender:data.sender,
-                    msg:data.msg,
-                    sendTime:data.sendTime
-                })
+                delete data.receiver
+                socket.to(users[receiver]).emit('receiveMessage',data)
             }
             //对方不在线，将消息存储到mongoDB中
             else {
