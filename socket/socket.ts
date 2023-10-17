@@ -190,18 +190,14 @@ module.exports = (server:any,pool:any) => {
             let promiseAll = Promise.all([selfPromise(),receiverPromise()])
 
             promiseAll.then(()=>{
-                selfInfoPromise().then((selfInfo:any)=>{
 
-                    socket.emit('hadAcceptApply',selfInfo)
-
+                selfInfoPromise().then((info:any)=>{
+                    socket.emit('hadAcceptApply',info)
                 })
 
-                receiverInfoPromise().then((receiverInfo:any)=>{
-
-                    socket.to(users[receiver]).emit('friendHadAcceptApply',receiverInfo)
-
+                receiverInfoPromise().then((info:any)=>{
+                    socket.to(users[receiver]).emit('friendHadAcceptApply',info)
                 })
-
 
             }).catch((err:any)=>{
                 console.log(err)
