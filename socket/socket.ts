@@ -1,4 +1,4 @@
-
+const {generateID,appendAvatar} = require('../util/util')
 
 module.exports = (server:any,pool:any) => {
     const { Server } = require('socket.io')
@@ -11,7 +11,6 @@ module.exports = (server:any,pool:any) => {
 
     let users:any = {}
     io.on('connection', (socket:any) => {
-
         socket.on('online',(user:any) => {
             const {name,user_id} = user
             users[name] = socket.id
@@ -76,7 +75,7 @@ module.exports = (server:any,pool:any) => {
              * 获取未收到的消息(待完善)
              */
 
-            console.log(users)
+            //console.log(users)
         })
 
         socket.on('sendMsg',(data:any) => {
@@ -204,6 +203,28 @@ module.exports = (server:any,pool:any) => {
             })
 
         })
+
+        socket.on('inviteFriendJoinGroup',(data:any)=>{
+            const creator = data.creator,members = data.members
+            let roomId = 'room:' + creator.username + generateID()
+            let avatarArr = []
+            socket.join(roomId)
+            avatarArr.push({id:creator.user_id,avatar:creator.avatar})
+            members.map((item:any)=>{
+                avatarArr.push({id:item.user_id,avatar:item.avatar})
+                socket.to(users[item.username]).emit('invitedJoinGroup',roomId)
+            })
+
+            appendAvatar(avatarArr)
+            socket.emit('inviteFriendJoinGroupSuccess')
+        })
+
+
+        socket.on('acceptJoinGroup',(room:string)=>{
+            socket.join(room)
+        })
+
+
         socket.on('disconnecting',() => {
             if (users.hasOwnProperty(socket.name)) {
                 delete users[socket.name]

@@ -1,4 +1,8 @@
 const jwt = require('jsonwebtoken')
+const fs = require('fs')
+const path = require('path')
+const gm = require('gm').subClass({ imageMagick: true })
+
 
 let secretOrPrivateKey = 'mallSecretOrPrivateKey'
 function createToken (params:any,expiresTime:any) {
@@ -26,8 +30,6 @@ function generateID (digit:number = 5,timeStamp:boolean = true,radix:number = 10
 }
 
 function encodeImgBase64(imagePath:string){
-  const path = require('path')
-  const fs = require('fs')
 
   let index = imagePath.indexOf('.')
 
@@ -79,10 +81,37 @@ function timeFormatting (fm:string,time:any){
 
 }
 
+
+
+
+function appendAvatar(avatarArr:string[]){
+
+  avatarArr.map((item:any)=>{
+    let filename ='1.jpg'
+    let base64 = item.avatar.replace(/^data:image\/\w+;base64,/,'')
+    let buffer = Buffer.from(base64,'base64')
+    let pt = path.join(__dirname,filename)
+    fs.writeFileSync(pt,buffer)
+    gm('../static/avatar.jpg').size((err:any,s:any)=>{
+      if(err){
+        console.log(err)
+      }
+      else{
+        console.log(s)
+      }
+    })
+  })
+
+
+
+}
+
+
 module.exports = {
   createToken,
   verifyToken,
   generateID,
   encodeImgBase64,
-  timeFormatting
+  timeFormatting,
+  appendAvatar
 }
