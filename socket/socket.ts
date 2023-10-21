@@ -214,7 +214,7 @@ module.exports = (server:any,pool:any) => {
                 avatarArr.push({id:item.user_id,avatar:item.avatar})
                 socket.to(users[item.username]).emit('invitedJoinGroup',roomId)
             })
-
+            console.log(avatarArr.length)
             appendAvatar(avatarArr)
             socket.emit('inviteFriendJoinGroupSuccess')
         })

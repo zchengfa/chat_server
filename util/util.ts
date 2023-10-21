@@ -85,22 +85,29 @@ function timeFormatting (fm:string,time:any){
 
 
 function appendAvatar(avatarArr:string[]){
-
+  let allImagePath:any[] = []
   avatarArr.map((item:any)=>{
-    let filename ='1.jpg'
+    let filename = item.id +  '.png'
     let base64 = item.avatar.replace(/^data:image\/\w+;base64,/,'')
     let buffer = Buffer.from(base64,'base64')
     let pt = path.join(__dirname,filename)
     fs.writeFileSync(pt,buffer)
-    gm('../static/avatar.jpg').size((err:any,s:any)=>{
-      if(err){
-        console.log(err)
-      }
-      else{
-        console.log(s)
+    gm(pt).resize(48,48).write(pt,(err:any)=>{
+      if(err) console.log(err)
+      allImagePath.push(pt)
+      if(allImagePath.length === avatarArr.length){
+        let direction = true,ip= path.join(__dirname, 'append.png')
+        allImagePath.map((img:string,index:number)=>{
+          direction = true
+          direction = !(index === 3 || index === 5);
+          console.log(direction)
+          gm(ip).append(img,direction).write(ip,()=>{})
+          
+        })
       }
     })
   })
+
 
 
 
