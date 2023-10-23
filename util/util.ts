@@ -1,3 +1,5 @@
+import {dirname} from "path";
+
 const jwt = require('jsonwebtoken')
 const fs = require('fs')
 const path = require('path')
@@ -82,33 +84,67 @@ function timeFormatting (fm:string,time:any){
 }
 
 
+/**
+ * 头像拼接
+ * @param avatarArr { Array } 头像数组
+ * @param callback  { Function } 回调函数
+ */
+function appendAvatar(avatarArr:string[],callback:Function = ()=>{}){
+  //设置头像存放的文件夹路径
+  let temp = __dirname.replace('util','temp')
 
+  //判断是否存在该文件夹，不存在就创建一个文件夹
+  if(!fs.existsSync(temp)){
+    fs.mkdirSync(temp)
+  }
 
-function appendAvatar(avatarArr:string[]){
-  let allImagePath:any[] = []
-  avatarArr.map((item:any)=>{
-    let filename = item.id +  '.png'
-    let base64 = item.avatar.replace(/^data:image\/\w+;base64,/,'')
-    let buffer = Buffer.from(base64,'base64')
-    let pt = path.join(__dirname,filename)
-    fs.writeFileSync(pt,buffer)
-    gm(pt).resize(48,48).write(pt,(err:any)=>{
-      if(err) console.log(err)
-      allImagePath.push(pt)
-      if(allImagePath.length === avatarArr.length){
-        let direction = true,ip= path.join(__dirname, 'append.png')
-        allImagePath.map((img:string,index:number)=>{
-          direction = true
-          direction = !(index === 3 || index === 5);
-          console.log(direction)
-          gm(ip).append(img,direction).write(ip,()=>{})
-          
-        })
-      }
-    })
+  let  allPath = [],pathOne:any[] = [],pathTwo:any[] = [],pathThree:any[] = [],ip= path.join(temp, 'append.png')
+  let row:number = Math.ceil(avatarArr.length/3)
+
+  //将头像放入对应的数组中
+  for (let i = 0; i < row; i++) {
+    let arr = pathOne,start = i === 0 ? 0 : i*3,end = i === 0 ? 3 : (i+1)*3
+
+    i === 1 ? arr = pathTwo : null
+    i === 2 ? arr = pathThree : null
+
+    arr.push(...avatarArr.slice(start,end))
+    allPath.push(arr)
+  }
+
+  //遍历总数组，根据数组中的数据将图片写入到定好的文件夹中
+  allPath.map((p:any,index:number)=>{
+    if(p.length){
+      let iPath:any[] = [],imgP = path.join(temp, 'append'+index+'.png')
+      p.map((item:any)=>{
+          let filename = item.id +  '.png',base64 = item.avatar.replace(/^data:image\/\w+;base64,/,''),buffer = Buffer.from(base64,'base64'),pt = path.join(temp,filename)
+          fs.writeFileSync(pt,buffer)
+          iPath.push(pt)
+      })
+      iPath.map((img:string,index:number)=>{
+        //将小数组中的头像从左往右拼接，呈行排列
+        gm(imgP).append(img,true).write(imgP,()=>{})
+      })
+    }
   })
 
+  //设置处理完的头像存放地
+  let fip = path.join(temp, 'finally.png')
 
+  //再将呈行排列的头像从上至下拼接，呈列排列
+  for (let i = 0; i < row; i++) {
+    let ip = path.join(temp, 'append'+i+'.png')
+    gm(fip).append(ip,false).write(fip,()=>{})
+  }
+
+  //最后将拼接玩的头像调整大小后。回调给调用者，并删除执行过程中所产生的头像
+  gm(fip).resize(64,64).write(fip,()=> {
+      callback(encodeImgBase64(temp + '\\finally.png'))
+      let files = fs.readdirSync(temp)
+      files.map((file:any)=>{
+        fs.unlinkSync(temp + '\\' + file)
+      })
+  })
 
 
 }
