@@ -121,32 +121,29 @@ function appendAvatar(avatarArr:string[],callback:Function = ()=>{}){
           fs.writeFileSync(pt,buffer)
           iPath.push(pt)
       })
-      iPath.map((img:string,index:number)=>{
-        //将小数组中的头像从左往右拼接，呈行排列
-        gm(imgP).append(img,true).write(imgP,()=>{})
+      //将小数组中的头像从左往右拼接，呈行排列
+      gm(imgP).append(iPath[0],true).append(iPath[1],true).append(iPath[2],true).write(imgP,()=>{
+        gm(imgP).resize(64,64).write(imgP,()=>{
+          if(index === (row -1)){
+            //设置处理完的头像存放地
+            let fip = path.join(temp, 'finally.png')
+
+            //再将呈行排列的头像从上至下拼接，呈列排列
+            gm(fip).append(path.join(temp,'append0.png')).append(path.join(temp,'append1.png')).append(path.join(temp,'append2.png')).write(fip,()=>{
+              gm(fip).resize(64,64).write(fip,()=>{
+                  callback(encodeImgBase64(fip))
+                  let files = fs.readdirSync(temp)
+
+                  files.map((file:any)=>{
+                    fs.rmSync(path.join(temp , file))
+                  })
+              })
+            })
+          }
+        })
       })
     }
   })
-
-  //设置处理完的头像存放地
-  let fip = path.join(temp, 'finally.png')
-
-  //再将呈行排列的头像从上至下拼接，呈列排列
-  for (let i = 0; i < row; i++) {
-    let ip = path.join(temp, 'append'+i+'.png')
-    gm(fip).append(ip,false).write(fip,()=>{})
-  }
-
-  //最后将拼接玩的头像调整大小后。回调给调用者，并删除执行过程中所产生的头像
-  gm(fip).resize(64,64).write(fip,()=> {
-      callback(encodeImgBase64(temp + '\\finally.png'))
-      let files = fs.readdirSync(temp)
-      files.map((file:any)=>{
-        fs.unlinkSync(temp + '\\' + file)
-      })
-  })
-
-
 }
 
 
