@@ -81,24 +81,30 @@ module.exports = (server:any,pool:any) => {
         socket.on('sendMsg',(data:any) => {
             //后续操作：先查看接收者是否在线，若不在线可以将消息保存至数据库，等他上线时再给他发送消息
             const receiver = data.receiver
-            console.log(users,data)
-            if (users[receiver]){
-                delete data.receiver
-                socket.to(users[receiver]).emit('receiveMessage',data)
-            }
-            //对方不在线，将消息存储到mongoDB中
-            else {
-                // let messageObj = {
-                //     'message':message,
-                //     'sender':sender,
-                //     'sendTime':sendTime,
-                //     'avatar':avatar,
-                //     'receiver':receiver
-                // }
-                // messageModel.insertMany(messageObj,{rawResult:true}).then(res =>{
-                //     console.log(res)
-                // })
-            }
+
+           if(data.type !== 'group'){
+               if (users[receiver]){
+                   delete data.receiver
+                   socket.to(users[receiver]).emit('receiveMessage',data)
+               }
+               //对方不在线，将消息存储到mongoDB中
+               else {
+                   // let messageObj = {
+                   //     'message':message,
+                   //     'sender':sender,
+                   //     'sendTime':sendTime,
+                   //     'avatar':avatar,
+                   //     'receiver':receiver
+                   // }
+                   // messageModel.insertMany(messageObj,{rawResult:true}).then(res =>{
+                   //     console.log(res)
+                   // })
+               }
+           }
+           else{
+               delete data.receiver
+               socket.broadcast.to(data.room).emit('receiveMessage',data)
+           }
 
         })
         //接收前端发出的好友申请
@@ -207,16 +213,19 @@ module.exports = (server:any,pool:any) => {
         socket.on('inviteFriendJoinGroup',(data:any)=>{
             const creator = data.creator,members = data.members
             let roomId = 'room:' + creator.username + generateID()
-            let avatarArr = []
+            let avatarArr = [],groupName = ''
             socket.join(roomId)
-            avatarArr.push({id:creator.user_id,avatar:creator.avatar})
+            avatarArr.push(creator)
+            groupName += creator.username +'、'
             members.map((item:any)=>{
-                avatarArr.push({id:item.user_id,avatar:item.avatar})
+                avatarArr.push(item)
+                groupName += item.username +'、'
                 socket.to(users[item.username]).emit('invitedJoinGroup',roomId)
             })
 
-            appendAvatar(avatarArr.splice(0,8),(e:any)=>{
-                socket.emit('inviteFriendJoinGroupSuccess',e)
+            appendAvatar(avatarArr.splice(0,8),40,(e:any)=>{
+
+                socket.emit('inviteFriendJoinGroupSuccess',{avatar:e,user:groupName,userId:roomId})
             })
 
         })

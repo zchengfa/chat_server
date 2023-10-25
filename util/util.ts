@@ -87,9 +87,10 @@ function timeFormatting (fm:string,time:any){
 /**
  * 头像拼接
  * @param avatarArr { Array } 头像数组
+ * @param size { Number } 图片尺寸
  * @param callback  { Function } 回调函数
  */
-function appendAvatar(avatarArr:string[],callback:Function = ()=>{}){
+function appendAvatar(avatarArr:string[],size:number = 48,callback:Function = ()=>{}){
   //设置头像存放的文件夹路径
   let temp = __dirname.replace('util','temp')
 
@@ -117,20 +118,20 @@ function appendAvatar(avatarArr:string[],callback:Function = ()=>{}){
     if(p.length){
       let iPath:any[] = [],imgP = path.join(temp, 'append'+index+'.png')
       p.map((item:any)=>{
-          let filename = item.id +  '.png',base64 = item.avatar.replace(/^data:image\/\w+;base64,/,''),buffer = Buffer.from(base64,'base64'),pt = path.join(temp,filename)
+          let filename = item.user_id +  '.png',base64 = item.avatar.replace(/^data:image\/\w+;base64,/,''),buffer = Buffer.from(base64,'base64'),pt = path.join(temp,filename)
           fs.writeFileSync(pt,buffer)
           iPath.push(pt)
       })
       //将小数组中的头像从左往右拼接，呈行排列
       gm(imgP).append(iPath[0],true).append(iPath[1],true).append(iPath[2],true).write(imgP,()=>{
-        gm(imgP).resize(64,64).write(imgP,()=>{
+        gm(imgP).resize(size,size).write(imgP,()=>{
           if(index === (row -1)){
             //设置处理完的头像存放地
             let fip = path.join(temp, 'finally.png')
 
             //再将呈行排列的头像从上至下拼接，呈列排列
             gm(fip).append(path.join(temp,'append0.png')).append(path.join(temp,'append1.png')).append(path.join(temp,'append2.png')).write(fip,()=>{
-              gm(fip).resize(64,64).write(fip,()=>{
+              gm(fip).resize(size,size).write(fip,()=>{
                   callback(encodeImgBase64(fip))
                   let files = fs.readdirSync(temp)
 
