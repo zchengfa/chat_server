@@ -124,24 +124,22 @@ function appendAvatar(avatarArr:string[],size:number = 48,callback:Function = ()
       })
       //将小数组中的头像从左往右拼接，呈行排列
       gm(imgP).append(iPath[0],true).append(iPath[1],true).append(iPath[2],true).write(imgP,()=>{
-        gm(imgP).resize(size,size).write(imgP,()=>{
-          if(index === (row -1)){
-            //设置处理完的头像存放地
-            let fip = path.join(temp, 'finally.png')
+        if(index === (row -1)){
+          //设置处理完的头像存放地
+          let fip = path.join(temp, 'finally.png')
 
-            //再将呈行排列的头像从上至下拼接，呈列排列
-            gm(fip).append(path.join(temp,'append0.png')).append(path.join(temp,'append1.png')).append(path.join(temp,'append2.png')).write(fip,()=>{
-              gm(fip).resize(size,size).write(fip,()=>{
-                  callback(encodeImgBase64(fip))
-                  let files = fs.readdirSync(temp)
+          //再将呈行排列的头像从上至下拼接，呈列排列
+          gm(fip).append(path.join(temp,'append0.png')).append(path.join(temp,'append1.png')).append(path.join(temp,'append2.png')).write(fip,()=>{
+            gm(fip).resize(size,size).write(fip,()=>{
+              callback(encodeImgBase64(fip))
+              let files = fs.readdirSync(temp)
 
-                  files.map((file:any)=>{
-                    fs.rmSync(path.join(temp , file))
-                  })
+              files.map((file:any)=>{
+                fs.rmSync(path.join(temp , file))
               })
             })
-          }
-        })
+          })
+        }
       })
     }
   })
