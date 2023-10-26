@@ -81,8 +81,7 @@ module.exports = (server:any,pool:any) => {
         socket.on('sendMsg',(data:any) => {
             //后续操作：先查看接收者是否在线，若不在线可以将消息保存至数据库，等他上线时再给他发送消息
             const receiver = data.receiver
-
-           if(data.type !== 'group'){
+           if(!data.isGroupChat){
                if (users[receiver]){
                    delete data.receiver
                    socket.to(users[receiver]).emit('receiveMessage',data)
@@ -102,6 +101,7 @@ module.exports = (server:any,pool:any) => {
                }
            }
            else{
+               console.log(data)
                delete data.receiver
                socket.broadcast.to(data.room).emit('receiveMessage',data)
            }
