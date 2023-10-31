@@ -1,3 +1,21 @@
+const multer = require('multer')
+const path = require('path')
+
+
+const storage = multer.diskStorage({
+    destination: __dirname.replace('router','avatar'),
+    filename:function (req:any,file:any,callback:Function) {
+        let ext = path.extname(file.originalname)
+        console.log(file)
+        callback(null, 'uploaded_' + file.fieldname + '_' + Date.now() + ext)
+    },
+    limits:{
+        files:2,
+        fileSize:102400
+    }
+})
+
+const upload = multer({storage})
 module.exports = (app:any,router:any,pool:any)=>{
 
     app.post('/searchUserInfo',(req:any,res:any)=>{
@@ -47,6 +65,11 @@ module.exports = (app:any,router:any,pool:any)=>{
         })
 
 
+    })
+
+    app.post('/uploadAvatar',upload.single('avatar'),(req:any,res:any)=>{
+        console.log(req.file)
+        res.send('ok')
     })
 
     app.use('/',router)

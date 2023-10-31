@@ -1,10 +1,10 @@
 module.exports = (app:any) =>{
   const { verifyToken } = require('../util/util')
   const urlWhiteList:string[] = [
-    '/loginRegister'
+    '/loginRegister',
+    '/uploadAvatar'
   ]
   app.use((req:any,res:any,next:Function)=>{
-
     //请求地址不在白名单内，需要验证token
     if(urlWhiteList.indexOf(req.url) === -1){
       const token = req.headers.authorization
