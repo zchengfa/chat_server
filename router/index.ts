@@ -1,12 +1,11 @@
 const multer = require('multer')
 const path = require('path')
-
+const {encodeImgBase64} = require('../util/util')
 
 const storage = multer.diskStorage({
     destination: __dirname.replace('router','avatar'),
     filename:function (req:any,file:any,callback:Function) {
         let ext = path.extname(file.originalname)
-        console.log(file)
         callback(null, 'uploaded_' + file.fieldname + '_' + Date.now() + ext)
     },
     limits:{
@@ -16,7 +15,7 @@ const storage = multer.diskStorage({
 })
 
 const upload = multer({storage})
-module.exports = (app:any,router:any,pool:any)=>{
+module.exports = (app:any,router:any,pool:any,redis:any)=>{
 
     app.post('/searchUserInfo',(req:any,res:any)=>{
         const { value,user_id } = JSON.parse(JSON.stringify(req.body))
@@ -68,8 +67,31 @@ module.exports = (app:any,router:any,pool:any)=>{
     })
 
     app.post('/uploadAvatar',upload.single('avatar'),(req:any,res:any)=>{
-        console.log(req.file)
-        res.send('ok')
+        let tempAvatar = req.file.path,{user_id,username} = req.query
+        let base64 = encodeImgBase64(tempAvatar,true)
+
+        if(base64){
+            redis.hgetall(username,(err:any,info:any)=>{
+                let originInfo = info
+                originInfo.avatar = base64
+                redis.hashSetObject(username,originInfo).then(()=>{
+                    let updateAvatar = pool.self_query.update('users',`avatar = '${base64}'`,`user_id = ${Number(user_id)}`)
+                    pool.query(updateAvatar,(e:any,result:any)=>{
+                        if(e){
+                            if(e.code === 'ER_DATA_TOO_LONG'){
+                                res.send({
+                                    err:'图片尺寸过大，请重新选择图片'
+                                })
+                            }
+                        }
+                        if(result){
+                            res.send({avatar:base64})
+                        }
+                    })
+                })
+            })
+
+        }
     })
 
     app.use('/',router)

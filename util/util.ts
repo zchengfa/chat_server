@@ -31,13 +31,17 @@ function generateID (digit:number = 5,timeStamp:boolean = true,radix:number = 10
   return timeStamp ? timestamp + id : id
 }
 
-function encodeImgBase64(imagePath:string){
+function encodeImgBase64(imagePath:string,removeOrigin:boolean = false ){
 
   let index = imagePath.indexOf('.')
 
   let filePath = path.resolve(imagePath)
 
   let image = fs.readFileSync(filePath)
+
+  if (removeOrigin){
+    fs.rmSync(filePath)
+  }
 
   return 'data:image/' + imagePath.substring(index + 1,imagePath.length) + ';base64,' + Buffer.from(image).toString('base64')
 

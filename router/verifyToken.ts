@@ -5,8 +5,9 @@ module.exports = (app:any) =>{
     '/uploadAvatar'
   ]
   app.use((req:any,res:any,next:Function)=>{
+
     //请求地址不在白名单内，需要验证token
-    if(urlWhiteList.indexOf(req.url) === -1){
+    if(urlWhiteList.indexOf(req.url) === -1 && urlWhiteList.indexOf(req.url.substring(0,req.url.indexOf('?'))) === -1){
       const token = req.headers.authorization
 
       verifyToken(token,(err:any,decode:any)=>{

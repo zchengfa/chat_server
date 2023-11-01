@@ -39,7 +39,7 @@ require('./socket/socket')(server,pool)
 
 require('./router/verifyToken')(app)
 
-require('./router/index')(app,router,pool)
+require('./router/index')(app,router,pool,redis)
 
 require('./router/loginRegister')(app,router,redis,pool)
 
