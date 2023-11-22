@@ -79,6 +79,7 @@ module.exports = (server:any,pool:any) => {
         })
 
         socket.on('sendMsg',(data:any) => {
+            console.log(data)
             //后续操作：先查看接收者是否在线，若不在线可以将消息保存至数据库，等他上线时再给他发送消息
             const receiver = data.receiver
            if(!data.isGroupChat){

@@ -18,9 +18,11 @@ app.use(bodyParser.urlencoded({extended:false}))
 app.use(cors())
 
 const { mysql_query,connect } = require('./mysql/pool')
-const pool = connect()
+const pool = connect((err:any,success:any)=>{
+    if(err) console.log(err)
+    if(success) console.log(success)
+})
 pool.self_query = mysql_query
-
 
 server.listen(4000,()=>{
     console.log('服务器运行中')

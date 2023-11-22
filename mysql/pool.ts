@@ -1,6 +1,8 @@
 
 const mysql = require('mysql')
 
+const TABLE_NAME_NORMAL = 'users'
+
 type table = string
 type confident = string
 
@@ -150,12 +152,19 @@ export const mysql_query = {
     }
 }
 
-export function connect(){
-    return mysql.createPool({
+export function connect(callback:Function){
+    let pool = mysql.createPool({
         host: 'localhost',
         user: 'root',
         password: '19961212',
         database: 'chat',
         multipleStatements: true
     })
+    pool.query(`select * from ${TABLE_NAME_NORMAL}`,(err:any,res:any)=>{
+        if(err) callback('MySQL出现错误，请检查是否开启该服务或测试表名是否正确',undefined)
+        if(res) callback(undefined,'MySQL服务运行中')
+    })
+
+    return pool
+
 }
