@@ -17,6 +17,20 @@ module.exports = (server:any,pool:any) => {
             socket.name = name
 
             /**
+             * 用户上线，查看用户是否加入过群聊，将群聊房间加入到socket中
+             */
+            const selectGroupInfo = pool.self_query.selectAll('user_group',`user_id = ${user_id}`)
+            pool.query(selectGroupInfo,(e:any,res:any)=>{
+                if(e) console.log(e)
+                if(res){
+                    res.forEach((item:any)=>{
+                        socket.join(item.group_id)
+                    })
+                }
+            })
+
+
+            /**
              * 后期操作：
              * 1.上线时查看当前上线者是否有在离线期间有其他用户给他发过消息，若有给上线者发送过去
              * 2.上线时给上线者发送好友信息
@@ -79,10 +93,16 @@ module.exports = (server:any,pool:any) => {
         })
 
         socket.on('sendMsg',(data:any) => {
-            console.log(data)
             //后续操作：先查看接收者是否在线，若不在线可以将消息保存至数据库，等他上线时再给他发送消息
             const receiver = data.receiver
+            if(data.type === 'img'){
+                //console.log(data)
+                socket.emit('sendImageProgress',{
+                    index:data.index,totalCount:data.chunkCount,identity:data.identity,userId:data.rID
+                })
+            }
            if(!data.isGroupChat){
+               //console.log(data)
                if (users[receiver]){
                    delete data.receiver
                    socket.to(users[receiver]).emit('receiveMessage',data)
@@ -102,19 +122,13 @@ module.exports = (server:any,pool:any) => {
                }
            }
            else{
-               console.log(data)
+               //console.log(data)
                delete data.receiver
                socket.broadcast.to(data.room).emit('receiveMessage',data)
            }
 
         })
         //接收前端发出的好友申请
-        // {
-        //     senderMsg:data.formData.sender,
-        //     senderUsername:data.sender.SUA,
-        //     sender_id:data.sender.SUN,
-        //     senderAccount:data.sender.SA
-        // }
         socket.on('sendFriendRequest',(data:any)=>{
             socket.emit('sendRequestSuccess')
             const receiver = data.receiver.RUA
@@ -128,8 +142,6 @@ module.exports = (server:any,pool:any) => {
             //console.log(data,'用户发送了好友申请')
         })
         socket.on('acceptApply',(data:any)=>{
-
-
             const receiver = data.receiver.info.username
             const senderNotes = data.sender.formData.notes
             const senderChatOnly = data.sender.formData.friendCircleSport
@@ -213,7 +225,7 @@ module.exports = (server:any,pool:any) => {
 
         socket.on('inviteFriendJoinGroup',(data:any)=>{
             const creator = data.creator,members = data.members
-            let roomId = 'room:' + creator.username + generateID()
+            let roomId = 'room:' + generateID()
             let avatarArr = [],groupName = ''
             socket.join(roomId)
             avatarArr.push(creator)
@@ -222,6 +234,14 @@ module.exports = (server:any,pool:any) => {
                 avatarArr.push(item)
                 groupName += item.username +'、'
                 socket.to(users[item.username]).emit('invitedJoinGroup',roomId)
+            })
+
+            members.unshift(creator)
+
+            members.forEach((item:any)=>{
+                setGroupChat(pool,{groupId:roomId,groupName,userId:item.user_id,username:item.username},(result:boolean)=>{
+                    !result ? console.log(`群聊关系创建失败(${item.username})`) : null
+                })
             })
 
             appendAvatar(avatarArr.splice(0,8),40,(e:any)=>{
@@ -274,4 +294,13 @@ function deleteValue(obj:any,propertyArr:string[] = ['password','last_login_time
     })
 
     return obj
+}
+
+function setGroupChat(pool:any,data:{groupId:string,groupName:string,userId:number,username:string},callback:Function){
+    const insertQuery = pool.self_query.insert('user_group','group_id,group_name,user_id,username',`'${data.groupId}','${data.groupName}',${data.userId},'${data.username}'`)
+    pool.query(insertQuery,(e:any,res:any)=>{
+        if(e) callback(false)
+        if(res) callback(true)
+    })
+
 }
