@@ -93,17 +93,18 @@ module.exports = (server:any,pool:any) => {
     })
 
     socket.on('sendMsg',(data:any,callback:Function) => {
-      //通过回调函数给你前端给予反馈（消息已收到）
-      callback(data.id)
+
       //后续操作：先查看接收者是否在线，若不在线可以将消息保存至数据库，等他上线时再给他发送消息
       const receiver = data.receiver
       if(data.type === 'img'){
         socket.emit('sendImageProgress',{
           index:data.index,totalCount:data.chunkCount,identity:data.identity,userId:data.rID
         })
+        console.log(data)
       }
       else{
-
+        //通过回调函数给你前端给予反馈（消息已收到）
+        callback(data.id)
       }
       if(!data.isGroupChat){
         //console.log(data)
