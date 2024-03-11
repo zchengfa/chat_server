@@ -6,7 +6,7 @@ interface redisConfig {
     password?:string | number,
     db?:number
 }
-export const redis = (config?:redisConfig)=>{
+export const Redis = (config?:redisConfig)=>{
     return new ioredis({
         port:config?.port,
         host:config?.host,
@@ -15,6 +15,7 @@ export const redis = (config?:redisConfig)=>{
     })
 }
 
+
 //给ioredis添加方法
 ioredis.prototype.hashSetObject = (key:any,obj:any)=>{
     let arg = []
@@ -22,6 +23,6 @@ ioredis.prototype.hashSetObject = (key:any,obj:any)=>{
         arg.push(keyKey,obj[keyKey])
     }
 
-    return redis().hmset(key,...arg)
+    return Redis().hmset(key,...arg)
 }
 
