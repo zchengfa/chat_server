@@ -1,6 +1,7 @@
+
 const {generateID,appendAvatar} = require('../util/util')
 
-module.exports = (server:any,pool:any) => {
+module.exports = (server:any,pool:any,redis:any) => {
   const { Server } = require('socket.io')
   const io = new Server(server,{
     cors:{
@@ -8,14 +9,12 @@ module.exports = (server:any,pool:any) => {
     }
   })
 
-
   let users:any = {}
   io.on('connection', (socket:any) => {
     socket.on('online',(user:any) => {
       const {name,user_id} = user
       users[name] = socket.id
       socket.name = name
-
       /**
        * 用户上线，查看用户是否加入过群聊，将群聊房间加入到socket中
        */
@@ -88,12 +87,37 @@ module.exports = (server:any,pool:any) => {
       /**
        * 获取未收到的消息(待完善)
        */
+      let offlineKey = 'offlineMessage'
+      redis.lrange(offlineKey,0,-1).then((result:any)=>{
+        if(result.length){
+          let messageData:any[] = []
+          result.map((item:any,index:number)=>{
+            let data = JSON.parse(item)
+            if(data.receiver === name){
+              delete data.receiver
+              messageData.push(data)
+              redis.lrem(offlineKey,0,item).then()
+            }
+          })
+          if(messageData.length){
+            socket.emit('receiveOfflineMessage',messageData)
+          }
+        }
+      })
 
-      //console.log(users)
+    })
+
+    socket.on('getAvatar',(data:{isGroupChat:boolean,id:string | number},callback:Function)=>{
+      let {isGroupChat,id} = data
+      let selectAvatar = pool.self_query.selectFields(isGroupChat ? 'group_main' : 'users','avatar',isGroupChat ? `group_id = '${id}'` : `user_id = ${id}`)
+      pool.query(selectAvatar,(err:Error,result:any)=>{
+        if(result){
+          callback(result[0]['avatar'])
+        }
+      })
     })
 
     socket.on('sendMsg',(data:any,callback:Function) => {
-
       //后续操作：先查看接收者是否在线，若不在线可以将消息保存至数据库，等他上线时再给他发送消息
       const receiver = data.receiver
       if(data.type === 'img'){
@@ -107,18 +131,17 @@ module.exports = (server:any,pool:any) => {
         callback(data.id)
       }
       if(!data.isGroupChat){
-        //console.log(data)
         if (users[receiver]){
           delete data.receiver
           socket.to(users[receiver]).emit('receiveMessage',data)
         }
         //对方不在线，将消息存储到redis中
         else {
-          //////////
+          //redis存储私对私聊天的离线消息
+          redis.lpush('offlineMessage',JSON.stringify(data)).then()
         }
       }
       else{
-        //console.log(data)
         delete data.receiver
         socket.broadcast.to(data.room).emit('receiveMessage',data)
       }
@@ -220,31 +243,47 @@ module.exports = (server:any,pool:any) => {
     })
 
     socket.on('inviteFriendJoinGroup',(data:any)=>{
+      //console.log(data)
       const creator = data.creator,members = data.members
       let roomId = 'room:' + generateID()
-      let avatarArr = [],groupName = ''
+      let avatarArr:any[] = [],groupName = ''
       socket.join(roomId)
-      avatarArr.push(creator)
       groupName += creator.username +'、'
       members.map((item:any)=>{
-        avatarArr.push(item)
         groupName += item.username +'、'
         socket.to(users[item.username]).emit('invitedJoinGroup',roomId)
       })
 
       members.unshift(creator)
+      let finishC = 0
+      members.map((item:any)=>{
+        const selectQuery = pool.self_query.selectFields('users','avatar',`user_id = ${item.user_id}`)
+        pool.query(selectQuery,(err:any,ava:any)=>{
+          avatarArr.push({
+            user_id:item.user_id,
+            avatar: ava[0]['avatar']
+          })
+          finishC ++
 
-      members.forEach((item:any)=>{
-        setGroupChat(pool,{groupId:roomId,groupName,userId:item.user_id,username:item.username},(result:boolean)=>{
-          !result ? console.log(`群聊关系创建失败(${item.username})`) : null
+          if(finishC === members.length){
+            appendAvatar(avatarArr.splice(0,8),40,(e:any)=>{
+              const insertQ = pool.self_query.insert('group_main','group_id,group_name,avatar',`'${roomId}','${groupName}','${e}'`)
+              pool.query(insertQ,(err:any,ava:any)=>{
+                console.log(err,ava)
+              })
+              socket.emit('inviteFriendJoinGroupSuccess',{avatar:e,user:groupName,userId:roomId})
+            })
+          }
         })
       })
 
-      appendAvatar(avatarArr.splice(0,8),40,(e:any)=>{
-
-        socket.emit('inviteFriendJoinGroupSuccess',{avatar:e,user:groupName,userId:roomId})
+      members.forEach((item:any)=>{
+        setGroupChat(pool,{groupId:roomId,groupName,userId:item.user_id,username:item.username},(result:boolean)=>{
+          if(!result){
+            console.log(`群聊关系创建失败(${item.username})`)
+          }
+        })
       })
-
     })
 
 
@@ -293,7 +332,6 @@ function deleteValue(obj:any,propertyArr:string[] = ['password','last_login_time
 
 function setGroupChat(pool:any,data:{groupId:string,groupName:string,userId:number,username:string},callback:Function){
   const insertQuery = pool.self_query.insert('user_group','group_id,user_id,username,nickname_Group',`'${data.groupId}',${data.userId},'${data.username}','${data.username}'`)
-  const insertQ = pool.self_query.insert('group_main','group_id,group_name',`'${data.groupId}','${data.groupName}'`)
   let promiseOne = new Promise((resolve, reject)=>{
     pool.query(insertQuery,(e:any,res:any)=>{
       if(e) reject(e)
@@ -301,14 +339,7 @@ function setGroupChat(pool:any,data:{groupId:string,groupName:string,userId:numb
     })
   })
 
-  let promiseTwo = new Promise((resolve, reject)=>{
-    pool.query(insertQ,(e:any,res:any)=>{
-      if(e) reject(e)
-      if(res) resolve(res)
-    })
-  })
-
-  Promise.all([promiseOne,promiseTwo]).then(()=>{
+  Promise.all([promiseOne]).then(()=>{
     callback(true)
   }).catch((e:any)=>{
     console.log(e)
