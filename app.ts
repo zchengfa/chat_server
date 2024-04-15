@@ -17,17 +17,15 @@ app.use(bodyParser.urlencoded({extended:false}))
 //允许跨域
 app.use(cors())
 
-const { mysql_query,connect } = require('./mysql/pool')
+const { connect } = require('./mysql/pool')
 const pool = connect((err:any,success:any)=>{
     if(err) console.log(err)
     if(success) console.log(success)
 })
-pool.self_query = mysql_query
 
 server.listen(4000,()=>{
     console.log('服务器运行中')
 })
-
 
 redis.on('connect',()=>{
     console.log('redis连接中')
@@ -37,7 +35,7 @@ redis.on('error',(err:any)=>{
     console.log('redis出现错误',err)
 })
 
-require('./socket/socket')(server,pool)
+require('./socket/socket')(server,pool,redis)
 
 require('./router/verifyToken')(app)
 
