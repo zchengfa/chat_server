@@ -3,7 +3,7 @@ const path = require('path')
 const {encodeImgBase64} = require('../util/util')
 
 const storage = multer.diskStorage({
-  destination: __dirname.replace('router','avatar'),
+  destination: process.cwd().replace('router','avatar'),
   filename:function (req:any,file:any,callback:Function) {
     let ext = path.extname(file.originalname)
     callback(null, 'uploaded_' + file.fieldname + '_' + Date.now() + ext)
