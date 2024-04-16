@@ -155,10 +155,10 @@ function mysql_query() {
 
 export function connect(callback:Function){
     let pool = mysql.createPool({
-        host: 'localhost',
-        user: 'root',
-        password: '19961212',
-        database: 'chat',
+        host: process.env.SQL_HOST,
+        user: process.env.SQL_USER,
+        password: process.env.SQL_PASS,
+        database: process.env.SQL_DATABASE,
         multipleStatements: true
     })
     pool.self_query = mysql_query()
