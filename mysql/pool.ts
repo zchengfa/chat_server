@@ -123,13 +123,38 @@ function mysql_query() {
         },
         /**
          * 数据库增加数据操作
+         * 当multi为true时，说明需要一次性插入多条数据
+         * values的值需要传入一个数组,数组中的对象属性，以及属性个数，都需要与传入fields个数、名字一致
+         * 例如：fields = 'field1,field2'
+         * values = [{
+         *   field1:'x',
+         *   field2:'x
+         * }]
          * @param table_name { string } 表名
          * @param fields { string } 字段
          * @param values { any } 数据
+         * @param multi {true | false} 是否一次性插入多条数据
          * @return { string } 返回可供MySQL操作数据库的语句
          */
-        insert(table_name:table,fields:string,values:any): string{
-            return `INSERT INTO ${table_name} (${fields}) VALUES (${values})`
+        insert(table_name:table,fields:string,values:any,multi:boolean = false): string{
+            let statement:string = ''
+            if(!multi){
+                statement = `INSERT INTO ${table_name} (${fields}) VALUES (${values})`
+            }
+            else{
+                let fieldArr = fields.split(','),realValues = ''
+                values.forEach((item:any)=>{
+                    let childValue = ''
+                    fieldArr.forEach((field:any)=>{
+                        childValue +=  "'"+item[field] + "',"
+                    })
+                    childValue = '(' + childValue.substring(0,childValue.length - 1) + '),'
+                    realValues += childValue
+                })
+                realValues = realValues.substring(0,realValues.length -1)
+                statement = `INSERT INTO ${table_name} (${fields}) VALUES ${realValues}`
+            }
+            return  statement
         },
         /**
          * 更新数据库数据
@@ -149,6 +174,17 @@ function mysql_query() {
          */
         deleteOperation(table_name:table,confident:confident):string{
             return `DELETE FROM ${table_name} WHERE ${confident}`
+        },
+        /**
+         * 使用IN一次性查询多条数据
+         * @param table_name {string} 表名
+         * @param fields {string} 字段，字段为空时默认查询全部字段
+         * @param where {string} 条件字段
+         * @param inValues {string} 条件字段可选择的范围
+         * @return {string} 返回可供MySQL操作数据库的语句
+         */
+        selectMultipleAtOnceWithIn(table_name:string,fields:string,where:string,inValues:string):string{
+            return `SELECT ${fields ? fields : '*'} FROM ${table_name} WHERE ${where} IN (${inValues})`
         }
     }
 }
